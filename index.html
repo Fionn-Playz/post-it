@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frameless Sticky Note</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f172a;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .launch-btn {
+      padding: 12px 24px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #713f12;
+      background: #fde047;
+      border: 2px solid #ca8a04;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <button class="launch-btn" onclick="openFramelessNote()">+ Launch Pure Post-It</button>
+
+  <script>
+    async function openFramelessNote() {
+      if (!('documentPictureInPicture' in window)) {
+        alert('Document Picture-in-Picture is not supported in this browser version.');
+        return;
+      }
+
+      // Open a frameless floating window
+      const pipWindow = await documentPictureInPicture.requestWindow({
+        width: 300,
+        height: 300,
+      });
+
+      // Inject styles into the PiP window
+      const style = pipWindow.document.createElement('style');
+      style.textContent = `
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+          background: linear-gradient(135deg, #ffff88 0%, #ffff55 100%); 
+          height: 100vh; 
+          display: flex; 
+          flex-direction: column; 
+          overflow: hidden;
+          font-family: 'Caveat', cursive;
+        }
+
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 6px 10px;
+          background: rgba(0,0,0,0.05);
+          user-select: none;
+        }
+
+        .mode-btn {
+          padding: 2px 8px;
+          font-size: 12px;
+          font-family: sans-serif;
+          font-weight: bold;
+          border: none;
+          background: rgba(255,255,255,0.6);
+          color: #713f12;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+
+        .mode-btn.active {
+          background: #713f12;
+          color: #fef08a;
+        }
+
+        .body-container {
+          position: relative;
+          flex: 1;
+        }
+
+        .type-layer {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          border: none;
+          background: transparent;
+          resize: none;
+          padding: 10px;
+          font-family: 'Caveat', cursive;
+          font-size: 24px;
+          outline: none;
+          color: #1e1b4b;
+        }
+
+        .draw-layer {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          pointer-events: none;
+          touch-action: none;
+        }
+
+        .draw-layer.active {
+          pointer-events: auto;
+          cursor: crosshair;
+        }
+
+        .fold-corner {
+          position: absolute;
+          bottom: 0; right: 0;
+          width: 28px; height: 28px;
+          background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.15) 51%, #eab308 55%, #fef08a 100%);
+          border-top-left-radius: 10px;
+          cursor: pointer;
+        }
+      `;
+      pipWindow.document.head.appendChild(style);
+
+      // Load font
+      const font = pipWindow.document.createElement('link');
+      font.rel = 'stylesheet';
+      font.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap';
+      pipWindow.document.head.appendChild(font);
+
+      // Populate note layout
+      pipWindow.document.body.innerHTML = `
+        <div class="header">
+          <div style="display:flex; gap:4px;">
+            <button class="mode-btn active" id="typeBtn">Type</button>
+            <button class="mode-btn" id="drawBtn">Scribble</button>
+          </div>
+        </div>
+        <div class="body-container">
+          <textarea class="type-layer" placeholder="Write here..."></textarea>
+          <canvas class="draw-layer" id="canvas"></canvas>
+        </div>
+        <div class="fold-corner" title="Close Note" id="closeBtn"></div>
+      `;
+
+      // Functionality setup
+      const doc = pipWindow.document;
+      const canvas = doc.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const typeBtn = doc.getElementById('typeBtn');
+      const drawBtn = doc.getElementById('drawBtn');
+
+      function resizeCanvas() {
+        canvas.width = pipWindow.innerWidth * (pipWindow.devicePixelRatio || 1);
+        canvas.height = (pipWindow.innerHeight - 30) * (pipWindow.devicePixelRatio || 1);
+        ctx.scale(pipWindow.devicePixelRatio || 1, pipWindow.devicePixelRatio || 1);
+        ctx.strokeStyle = '#1d4ed8';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+      }
+      setTimeout(resizeCanvas, 50);
+
+      typeBtn.onclick = () => {
+        typeBtn.classList.add('active');
+        drawBtn.classList.remove('active');
+        canvas.classList.remove('active');
+      };
+
+      drawBtn.onclick = () => {
+        drawBtn.classList.add('active');
+        typeBtn.classList.remove('active');
+        canvas.classList.add('active');
+      };
+
+      doc.getElementById('closeBtn').onclick = () => pipWindow.close();
+
+      let drawing = false;
+      const getPos = e => ({ x: e.clientX, y: e.clientY - 30 });
+
+      canvas.onpointerdown = e => {
+        drawing = true;
+        canvas.setPointerCapture(e.pointerId);
+        const p = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      };
+
+      canvas.onpointermove = e => {
+        if (!drawing) return;
+        const p = getPos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      };
+
+      canvas.onpointerup = canvas.onpointercancel = () => { drawing = false; };
+    }
+  </script>
+</body>
+</html>
