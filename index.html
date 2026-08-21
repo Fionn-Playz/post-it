@@ -2,204 +2,248 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Frameless Sticky Note</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@600&display=swap" rel="stylesheet">
+  <title>Floating Post-It</title>
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #0f172a;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    body { 
+      background: #0f172a; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh; 
+      margin: 0; 
+      font-family: system-ui, sans-serif; 
     }
-
-    .launch-btn {
-      padding: 12px 24px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #713f12;
-      background: #fde047;
-      border: 2px solid #ca8a04;
-      border-radius: 999px;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    .launch-btn { 
+      padding: 14px 28px; 
+      font-size: 16px; 
+      font-weight: 700; 
+      color: #713f12; 
+      background: #fde047; 
+      border: 2px solid #ca8a04; 
+      border-radius: 999px; 
+      cursor: pointer; 
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      transition: transform 0.15s ease;
     }
+    .launch-btn:hover { transform: scale(1.05); }
   </style>
 </head>
 <body>
 
-  <button class="launch-btn" onclick="openFramelessNote()">+ Launch Pure Post-It</button>
+  <button class="launch-btn" onclick="launchNote()">+ Launch Floating Post-It</button>
 
   <script>
-    async function openFramelessNote() {
+    async function launchNote() {
       if (!('documentPictureInPicture' in window)) {
-        alert('Document Picture-in-Picture is not supported in this browser version.');
+        alert('Picture-in-Picture API is restricted or unavailable on this device.');
         return;
       }
 
-      // Open a frameless floating window
-      const pipWindow = await documentPictureInPicture.requestWindow({
-        width: 300,
-        height: 300,
-      });
+      const pip = await documentPictureInPicture.requestWindow({ width: 310, height: 320 });
 
-      // Inject styles into the PiP window
-      const style = pipWindow.document.createElement('style');
-      style.textContent = `
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-          background: linear-gradient(135deg, #ffff88 0%, #ffff55 100%); 
-          height: 100vh; 
-          display: flex; 
-          flex-direction: column; 
-          overflow: hidden;
-          font-family: 'Caveat', cursive;
-        }
-
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 6px 10px;
-          background: rgba(0,0,0,0.05);
-          user-select: none;
-        }
-
-        .mode-btn {
-          padding: 2px 8px;
-          font-size: 12px;
-          font-family: sans-serif;
-          font-weight: bold;
-          border: none;
-          background: rgba(255,255,255,0.6);
-          color: #713f12;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-
-        .mode-btn.active {
-          background: #713f12;
-          color: #fef08a;
-        }
-
-        .body-container {
-          position: relative;
-          flex: 1;
-        }
-
-        .type-layer {
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          border: none;
-          background: transparent;
-          resize: none;
-          padding: 10px;
-          font-family: 'Caveat', cursive;
-          font-size: 24px;
-          outline: none;
-          color: #1e1b4b;
-        }
-
-        .draw-layer {
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          pointer-events: none;
-          touch-action: none;
-        }
-
-        .draw-layer.active {
-          pointer-events: auto;
-          cursor: crosshair;
-        }
-
-        .fold-corner {
-          position: absolute;
-          bottom: 0; right: 0;
-          width: 28px; height: 28px;
-          background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.15) 51%, #eab308 55%, #fef08a 100%);
-          border-top-left-radius: 10px;
-          cursor: pointer;
-        }
-      `;
-      pipWindow.document.head.appendChild(style);
-
-      // Load font
-      const font = pipWindow.document.createElement('link');
-      font.rel = 'stylesheet';
-      font.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap';
-      pipWindow.document.head.appendChild(font);
-
-      // Populate note layout
-      pipWindow.document.body.innerHTML = `
-        <div class="header">
-          <div style="display:flex; gap:4px;">
-            <button class="mode-btn active" id="typeBtn">Type</button>
-            <button class="mode-btn" id="drawBtn">Scribble</button>
+      pip.document.body.innerHTML = `
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          html, body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            margin: 0;
+            background: #0f172a;
+            font-family: cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+          }
+          .note-paper {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffff88 0%, #ffff55 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+            border-radius: 2px;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+          }
+          .note-paper.peeling {
+            transform: rotate(-18deg) translateY(-120%) scale(0.6) !important;
+            opacity: 0;
+          }
+          .toolbar {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.06);
+            border-bottom: 1px dashed rgba(0,0,0,0.08);
+            z-index: 4;
+            user-select: none;
+          }
+          .tool-btn {
+            font-size: 10px;
+            font-family: sans-serif;
+            font-weight: bold;
+            border: none;
+            background: rgba(255,255,255,0.7);
+            color: #713f12;
+            padding: 2px 7px;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+          .tool-btn.active { background: #713f12; color: #fef08a; }
+          .body-container {
+            position: relative;
+            width: 100%;
+            flex: 1;
+          }
+          canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+          }
+          textarea {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none;
+            background: transparent;
+            padding: 10px;
+            font-size: 19px;
+            line-height: 1.2;
+            outline: none;
+            color: #1e1b4b;
+            resize: none;
+            font-family: cursive, sans-serif;
+            z-index: 2;
+          }
+          .fold {
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.15) 51%, #eab308 55%, #fef08a 100%);
+            border-top-left-radius: 12px;
+            box-shadow: -2px -2px 6px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 5;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+          .fold:hover {
+            transform: scale(1.25) translate(-3px, -3px);
+          }
+        </style>
+        <div class="note-paper" id="paper">
+          <div class="toolbar">
+            <button class="tool-btn active" id="penBtn">✏️ Pen</button>
+            <button class="tool-btn" id="eraseBtn">🧹 Erase</button>
+            <button class="tool-btn" id="clearBtn">🗑️ Clear</button>
           </div>
+          <div class="body-container">
+            <canvas id="cvs"></canvas>
+            <textarea id="txt" placeholder="Write or scribble..."></textarea>
+          </div>
+          <div class="fold" id="closeBtn" title="Peel off note"></div>
         </div>
-        <div class="body-container">
-          <textarea class="type-layer" placeholder="Write here..."></textarea>
-          <canvas class="draw-layer" id="canvas"></canvas>
-        </div>
-        <div class="fold-corner" title="Close Note" id="closeBtn"></div>
       `;
 
-      // Functionality setup
-      const doc = pipWindow.document;
-      const canvas = doc.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
-      const typeBtn = doc.getElementById('typeBtn');
-      const drawBtn = doc.getElementById('drawBtn');
+      const doc = pip.document;
+      const paper = doc.getElementById('paper');
+      const cvs = doc.getElementById('cvs');
+      const txt = doc.getElementById('txt');
+      const ctx = cvs.getContext('2d');
+      const penBtn = doc.getElementById('penBtn');
+      const eraseBtn = doc.getElementById('eraseBtn');
+      const clearBtn = doc.getElementById('clearBtn');
 
-      function resizeCanvas() {
-        canvas.width = pipWindow.innerWidth * (pipWindow.devicePixelRatio || 1);
-        canvas.height = (pipWindow.innerHeight - 30) * (pipWindow.devicePixelRatio || 1);
-        ctx.scale(pipWindow.devicePixelRatio || 1, pipWindow.devicePixelRatio || 1);
-        ctx.strokeStyle = '#1d4ed8';
-        ctx.lineWidth = 2.5;
+      let currentTool = 'pen';
+
+      const tilt = (Math.random() * 10 - 5).toFixed(1);
+      paper.style.transform = `rotate(${tilt}deg)`;
+
+      function setupCanvas() {
+        cvs.width = (pip.innerWidth - 24) * (pip.devicePixelRatio || 1);
+        cvs.height = (pip.innerHeight - 50) * (pip.devicePixelRatio || 1);
+        ctx.scale(pip.devicePixelRatio || 1, pip.devicePixelRatio || 1);
         ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        restoreData();
       }
-      setTimeout(resizeCanvas, 50);
+      setTimeout(setupCanvas, 50);
 
-      typeBtn.onclick = () => {
-        typeBtn.classList.add('active');
-        drawBtn.classList.remove('active');
-        canvas.classList.remove('active');
+      penBtn.onclick = () => {
+        currentTool = 'pen';
+        penBtn.classList.add('active');
+        eraseBtn.classList.remove('active');
       };
 
-      drawBtn.onclick = () => {
-        drawBtn.classList.add('active');
-        typeBtn.classList.remove('active');
-        canvas.classList.add('active');
+      eraseBtn.onclick = () => {
+        currentTool = 'erase';
+        eraseBtn.classList.add('active');
+        penBtn.classList.remove('active');
       };
 
-      doc.getElementById('closeBtn').onclick = () => pipWindow.close();
+      clearBtn.onclick = () => {
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+        txt.value = '';
+        saveData();
+      };
 
-      let drawing = false;
-      const getPos = e => ({ x: e.clientX, y: e.clientY - 30 });
+      function saveData() {
+        localStorage.setItem('postit_text', txt.value);
+        localStorage.setItem('postit_draw', cvs.toDataURL());
+      }
 
-      canvas.onpointerdown = e => {
-        drawing = true;
-        canvas.setPointerCapture(e.pointerId);
-        const p = getPos(e);
+      function restoreData() {
+        const savedText = localStorage.getItem('postit_text');
+        const savedDraw = localStorage.getItem('postit_draw');
+        if (savedText) txt.value = savedText;
+        if (savedDraw) {
+          const img = new Image();
+          img.onload = () => ctx.drawImage(img, 0, 0, cvs.width / (pip.devicePixelRatio || 1), cvs.height / (pip.devicePixelRatio || 1));
+          img.src = savedDraw;
+        }
+      }
+
+      txt.oninput = saveData;
+
+      doc.getElementById('closeBtn').onclick = () => {
+        paper.classList.add('peeling');
+        setTimeout(() => pip.close(), 320);
+      };
+
+      let isDrawing = false;
+      txt.onpointerdown = e => {
+        isDrawing = true;
+        txt.setPointerCapture(e.pointerId);
+        const rect = txt.getBoundingClientRect();
+
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
+        if (currentTool === 'erase') {
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.lineWidth = 18;
+        } else {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.strokeStyle = '#1d4ed8';
+          ctx.lineWidth = 2.5;
+        }
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
       };
 
-      canvas.onpointermove = e => {
-        if (!drawing) return;
-        const p = getPos(e);
-        ctx.lineTo(p.x, p.y);
+      txt.onpointermove = e => {
+        if (!isDrawing) return;
+        const rect = txt.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
         ctx.stroke();
       };
 
-      canvas.onpointerup = canvas.onpointercancel = () => { drawing = false; };
+      txt.onpointerup = txt.onpointercancel = () => { 
+        if (isDrawing) {
+          isDrawing = false; 
+          saveData();
+        }
+      };
     }
   </script>
 </body>
